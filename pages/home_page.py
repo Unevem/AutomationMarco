@@ -15,6 +15,13 @@ class HomePage(BasePage):
     COOKIES_ACCEPT = (By.XPATH, "//div[contains(@class, 'cookie')]//button | //button[contains(text(), 'Aceitar')]")
     POPUP_CLOSE_IMG = (By.CSS_SELECTOR, "img[src*='close'], img[src*='fechar']")
     POPUP_CLOSE_BTN = (By.CSS_SELECTOR, ".close-btn, .pop-close-btn, .ui-window-close")
+    
+    # Botão de pesquisa (lupa)
+    SEARCH_BUTTON = (By.CLASS_NAME, "search--submit--2VTbd-T")
+    
+    # Lista de sugestões
+    SUGGESTION_LIST = (By.CLASS_NAME, "search--optionList--19uL_I0")
+    SUGGESTION_ITEMS = (By.CSS_SELECTOR, "li[id^='search-suggestions-']")
 
     def __init__(self, driver):
         super().__init__(driver)
@@ -47,13 +54,39 @@ class HomePage(BasePage):
                     pass
 
     def search_for(self, text):
-        """Realiza a busca de um produto."""
+        """Realiza a busca de um produto pressionando ENTER."""
         # Tenta encontrar a barra de busca primária ou a alternativa
         input_locator = self.SEARCH_INPUT
         if not self.is_element_present(self.SEARCH_INPUT, timeout=3):
             input_locator = self.SEARCH_INPUT_ALT
 
-        # Digita o texto e pressiona ENTER (mais resiliente do que tentar encontrar o botão de lupa)
+        # Digita o texto e pressiona ENTER
         self.type_text(input_locator, text)
         element = self.find_element(input_locator)
         element.send_keys(Keys.RETURN)
+
+    def search_with_button(self, text):
+        """Realiza a busca digitando o texto e clicando no botão de lupa."""
+        input_locator = self.SEARCH_INPUT
+        if not self.is_element_present(self.SEARCH_INPUT, timeout=3):
+            input_locator = self.SEARCH_INPUT_ALT
+
+        self.type_text(input_locator, text)
+        self.click(self.SEARCH_BUTTON)
+
+    def get_suggestions(self, text):
+        """Digita o texto e retorna a lista de sugestões que aparecem."""
+        input_locator = self.SEARCH_INPUT
+        if not self.is_element_present(self.SEARCH_INPUT, timeout=3):
+            input_locator = self.SEARCH_INPUT_ALT
+
+        # Digita sem apertar ENTER
+        self.type_text(input_locator, text)
+        
+        # Espera um pouco para as sugestões carregarem
+        time.sleep(2)
+        
+        if self.is_element_present(self.SUGGESTION_ITEMS, timeout=5):
+            elements = self.driver.find_elements(*self.SUGGESTION_ITEMS)
+            return [el.text for el in elements if el.text.strip() != ""]
+        return []
